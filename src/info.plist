@@ -436,7 +436,7 @@ An Alfred workflow for Google Authenticator that generates TOTP and copies them 
 
 System Modifications
 ————————————————————
-Create a ~/.gauth file with your secrets:
+Create a ~/.config/google-authenticator file with your secrets (~/.gauth also works):
 
 [Google]
 secret = xxxxxxxxxxxxxxxxxx

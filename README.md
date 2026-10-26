@@ -7,7 +7,7 @@ An Alfred workflow for Google Authenticator that generates TOTP and copies them 
 Installation
 ------------
 
-Create a `~/.gauth` file with your secrets:
+Create a `~/.config/google-authenticator` file with your secrets:
 
 ```ini
 [Google]
@@ -16,6 +16,8 @@ secret=xxxxxxxxxxxxxxxxxx
 [Evernote]
 secret=yyyyyyyyyyyyyyyyyy
 ```
+
+A `~/.gauth` file from the original workflow still works if there isn't one in `~/.config`.
 
 [Download](https://github.com/stevelacey/alfred-google-authenticator/raw/master/Google%20Authenticator.alfredworkflow) and import to Alfred
 

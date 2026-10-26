@@ -20,11 +20,13 @@ class AlfredGAuth(alfred.AlfredWorkflow):
 
     _reserved_words = ['add', 'update', 'remove']
 
-    def __init__(self, config_file='~/.gauth', max_results=20):
+    _legacy_config_file = '~/.gauth'
+
+    def __init__(self, config_file=None, max_results=20):
         self.max_results = max_results
 
-        self._config_file = config_file
-        self.config_file = os.path.expanduser(self._config_file)
+        self.config_file = os.path.expanduser(config_file or self.find_config())
+        self._config_file = self.config_file.replace(os.path.expanduser('~'), '~', 1)
         self.config = configparser.RawConfigParser()
         self.config.read(self.config_file)
 
@@ -44,7 +46,18 @@ class AlfredGAuth(alfred.AlfredWorkflow):
                                        exception=e)
             self.write_item(item)
 
+    @classmethod
+    def find_config(cls):
+        # Use the XDG config path, falling back to the original ~/.gauth if that's all there is
+        config_home = os.environ.get('XDG_CONFIG_HOME') or '~/.config'
+        config_file = os.path.join(os.path.expanduser(config_home), 'google-authenticator')
+        legacy = os.path.expanduser(cls._legacy_config_file)
+        if not os.path.exists(config_file) and os.path.exists(legacy):
+            return legacy
+        return config_file
+
     def create_config(self):
+        os.makedirs(os.path.dirname(self.config_file), exist_ok=True)
         with open(self.config_file, 'w') as f:
             f.write(self._config_file_initial_content)
             f.close()
@@ -92,7 +105,7 @@ class AlfredGAuth(alfred.AlfredWorkflow):
                            None, 'time.png')
 
     def config_file_is_empty_item(self):
-        return self.warning_item(title='GAuth is not yet configured',
+        return self.warning_item(title='Google Authenticator is not yet configured',
                                  message='You must add your secrets to '
                                  'the {} file (see documentation)'
                                  .format(self._config_file))
