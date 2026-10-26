@@ -81,7 +81,7 @@ class AlfredGAuth(alfred.AlfredWorkflow):
     def account_item(self, account, token, uid=None):
         return alfred.Item({u'uid': alfred.get_uid(uid), u'arg': token,
                             u'autocomplete': account}, account,
-                           'Post {} at cursor'.format(token), 'icon.png')
+                           token, 'icon.png')
 
     def time_remaining_item(self):
         # The uid for the remaining time will be the current time,
