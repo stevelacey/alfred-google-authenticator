@@ -2,7 +2,6 @@
 
 import os
 import configparser
-import time
 
 import alfred
 import otp
@@ -96,14 +95,6 @@ class AlfredGAuth(alfred.AlfredWorkflow):
                             u'autocomplete': account}, account,
                            token, 'icon.png')
 
-    def time_remaining_item(self):
-        # The uid for the remaining time will be the current time,
-        # so it will appears always at the last position in the list
-        time_remaining = otp.get_totp_time_remaining()
-        return alfred.Item({u'uid': time.time(), u'arg': '', u'ignore': 'yes'},
-                           'Time Remaining: {}s'.format(time_remaining),
-                           None, 'time.png')
-
     def config_file_is_empty_item(self):
         return self.warning_item(title='Google Authenticator is not yet configured',
                                  message='You must add your secrets to '
@@ -122,9 +113,7 @@ class AlfredGAuth(alfred.AlfredWorkflow):
             if entry:
                 yield entry
                 i += 1
-        if i > 0:
-            yield self.time_remaining_item()
-        else:
+        if not i:
             yield self.warning_item('Account not found',
                                     'There is no account matching "{}" '
                                     'on your configuration file '

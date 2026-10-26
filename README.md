@@ -42,9 +42,6 @@ Acknowledgment
 - Forked from [Alfred Workflow: Google Authenticator](https://github.com/moul/alfred-workflow-gauth)
   - [Manfred Touron](https://github.com/moul)
   - Licensed under MIT
-- Original alarm clock icon
-  - [Alex Auda Samora from The Noun Project](http://thenounproject.com/razerk/)
-  - Licensed under Creative Commons Attribution
 - Original source code
   - [Manfred Touron](https://github.com/moul)
 - Serial contributor
