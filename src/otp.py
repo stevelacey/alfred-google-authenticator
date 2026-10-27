@@ -20,10 +20,6 @@ def get_totp_token(key):
     return str(token).zfill(6)
 
 
-def get_totp_time_remaining():
-    return int(30 - (time.time() % 30))
-
-
 def pad_base32_str(str, padding_char):
     str_len = len(str)
     missing_padding = str_len % 8

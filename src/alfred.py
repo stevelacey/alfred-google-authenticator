@@ -1,6 +1,5 @@
 # -*- coding: utf-8 -*-
 import itertools
-import os
 import plistlib
 import unicodedata
 import sys
@@ -27,12 +26,7 @@ bundleid = preferences['bundleid']
 class Item(object):
     @classmethod
     def unicode(cls, value):
-        try:
-            items = value.items()
-        except AttributeError:
-            return str(value)
-        else:
-            return dict(map(str, item) for item in items)
+        return dict(map(str, item) for item in value.items())
 
     def __init__(self, attributes, title, subtitle, icon=None):
         self.attributes = attributes
@@ -40,30 +34,19 @@ class Item(object):
         self.subtitle = subtitle
         self.icon = icon
 
-    def __str__(self):
-        return tostring(self.xml(), encoding='utf-8')
-
     def xml(self):
         item = Element(u'item', self.unicode(self.attributes))
         for attribute in (u'title', u'subtitle', u'icon'):
             value = getattr(self, attribute)
             if value is None:
                 continue
-            try:
-                (value, attributes) = value
-            except:
-                attributes = {}
-                elem = SubElement(item, attribute, self.unicode(attributes))
-                elem.text = str(value)
+            elem = SubElement(item, attribute)
+            elem.text = str(value)
         return item
 
 
 def args(characters=None):
     return tuple(unescape(decode(arg), characters) for arg in sys.argv[1:])
-
-
-def config():
-    return _create('config')
 
 
 def decode(s):
@@ -91,43 +74,6 @@ def xml(items, maxresults=_MAX_RESULTS_DEFAULT):
     for item in itertools.islice(items, maxresults):
         root.append(item.xml())
     return tostring(root, encoding='utf-8')
-
-
-def _create(path):
-    if not os.path.isdir(path):
-        os.mkdir(path)
-    if not os.access(path, os.W_OK):
-        raise IOError('No write access: %s' % path)
-    return path
-
-
-def work(volatile):
-    path = {
-        True: '~/Library/Caches/com.runningwithcrayons.Alfred-2/Workflow Data',
-        False: '~/Library/Application Support/Alfred 2/Workflow Data'
-    }[bool(volatile)]
-    return _create(os.path.join(os.path.expanduser(path), bundleid))
-
-
-def config_set(key, value, volatile=True):
-    filepath = os.path.join(work(volatile), 'config.plist')
-    try:
-        conf = plistlib.readPlist(filepath)
-    except IOError:
-        conf = {}
-    conf[key] = value
-    plistlib.writePlist(conf, filepath)
-
-
-def config_get(key, default=None, volatile=True):
-    filepath = os.path.join(work(volatile), 'config.plist')
-    try:
-        conf = plistlib.readPlist(filepath)
-    except IOError:
-        conf = {}
-    if key in conf:
-        return conf[key]
-    return default
 
 
 class AlfredWorkflow(object):
