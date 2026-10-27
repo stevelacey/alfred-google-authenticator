@@ -72,10 +72,9 @@ class AlfredGAuth(alfred.AlfredWorkflow):
 
         try:
             key = otp.get_hotp_key(secret=secret, key=key, hexkey=hexkey)
-        except:
-            key = ''
-
-        return otp.get_totp_token(key)
+            return otp.get_totp_token(key)
+        except Exception:
+            return None
 
     def config_list_accounts(self):
         return self.config.sections()
@@ -102,10 +101,11 @@ class AlfredGAuth(alfred.AlfredWorkflow):
             if self.filter_by_account(account, query):
                 continue
             token = self.config_get_account_token(account)
-            entry = self.account_item(uid=i, account=account, token=token)
-            if entry:
-                yield entry
-                i += 1
+            if token:
+                yield self.account_item(uid=i, account=account, token=token)
+            else:
+                yield self.error_item(account, 'Invalid secret', uid=i)
+            i += 1
         if not i:
             yield self.warning_item('Account not found',
                                     'There is no account matching "{}" '

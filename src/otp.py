@@ -48,6 +48,8 @@ def is_otp_secret_valid(secret):
 
 
 def get_hotp_key(key=None, secret=None, hexkey=None):
+    if key:
+        key = key.encode()
     if hexkey:
         key = bytes.fromhex(hexkey)
     if secret:
