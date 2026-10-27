@@ -49,7 +49,7 @@ def is_otp_secret_valid(secret):
 
 def get_hotp_key(key=None, secret=None, hexkey=None):
     if hexkey:
-        key = hexkey.decode('hex')
+        key = bytes.fromhex(hexkey)
     if secret:
         secret = secret.replace(' ', '')
         secret = pad_base32_str(secret, '=')
