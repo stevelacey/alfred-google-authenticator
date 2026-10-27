@@ -35,6 +35,8 @@ Development
 After modifying files locally, run `bundle.sh` to update the workflow file, and
 commit the workflow file update to this repository.
 
+Run the tests with `python3 -m unittest discover -s tests`.
+
 
 Acknowledgment
 --------------
