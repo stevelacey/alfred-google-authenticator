@@ -27,23 +27,16 @@ class AlfredGAuth(alfred.AlfredWorkflow):
         self.config_file = os.path.expanduser(config_file or self.find_config())
         self._config_file = self.config_file.replace(os.path.expanduser('~'), '~', 1)
         self.config = configparser.RawConfigParser()
-        self.config.read(self.config_file)
 
         # If the configuration file doesn't exist, create an empty one
         if not os.path.isfile(self.config_file):
             self.create_config()
 
         try:
-            if not self.config.sections():
-                # If the configuration file is empty,
-                # tell the user to add secrets to it
-                self.write_item(self.config_file_is_empty_item())
-                return
-        except Exception as e:
-            item = self.exception_item(title='{}: Invalid syntax'
-                                       .format(self._config_file),
-                                       exception=e)
-            self.write_item(item)
+            self.config.read(self.config_file)
+            self.config_error = None
+        except configparser.Error as e:
+            self.config_error = e
 
     @classmethod
     def find_config(cls):
@@ -124,20 +117,28 @@ class AlfredGAuth(alfred.AlfredWorkflow):
         if not otp.is_otp_secret_valid(secret):
             return "Invalid secret:\n[{0}]".format(secret)
 
-        config_file = open(self.config_file, 'r+')
         try:
             self.config.add_section(account)
-            self.config.set(account, "secret", secret)
-            self.config.write(config_file)
         except configparser.DuplicateSectionError:
             return "Account already exists:\n[{0}]".format(account)
-        finally:
-            config_file.close()
+
+        self.config.set(account, "secret", secret)
+        with open(self.config_file, 'w') as config_file:
+            self.config.write(config_file)
 
         return "A new account was added:\n[{0}]".format(account)
 
     def do_search_by_account(self, query):
-        self.write_items(self.search_by_account_iter(query))
+        if self.config_error:
+            self.write_item(self.exception_item(title='{}: Invalid syntax'
+                                                .format(self._config_file),
+                                                exception=self.config_error))
+        elif not self.config.sections():
+            # If the configuration file is empty,
+            # tell the user to add secrets to it
+            self.write_item(self.config_file_is_empty_item())
+        else:
+            self.write_items(self.search_by_account_iter(query))
 
     def do_add_account(self, query):
         try:
@@ -147,6 +148,9 @@ class AlfredGAuth(alfred.AlfredWorkflow):
         except ValueError:
             return self.write_text('Invalid arguments!\n'
                                    'Please enter: account, secret.')
+
+        if self.config_error:
+            return self.write_text('{}: Invalid syntax'.format(self._config_file))
 
         return self.write_text(self.add_account(account, secret))
 
