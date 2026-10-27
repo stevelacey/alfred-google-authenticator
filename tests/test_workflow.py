@@ -1,6 +1,8 @@
+import contextlib
+import io
 import os
 import plistlib
-import subprocess
+import runpy
 import sys
 import tempfile
 import unittest
@@ -10,7 +12,23 @@ from unittest import mock
 SRC = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "src")
 sys.path.insert(0, SRC)
 
-import otp  # noqa: E402
+
+
+@contextlib.contextmanager
+def chdir(path):
+    cwd = os.getcwd()
+    os.chdir(path)
+    try:
+        yield
+    finally:
+        os.chdir(cwd)
+
+
+# alfred.py reads info.plist from the working directory when it's imported
+with chdir(SRC):
+    import alfred  # noqa: E402
+    import otp  # noqa: E402
+    import workflow  # noqa: E402, F401
 
 CONFIG_NAME = "google-authenticator"
 LEGACY_CONFIG = ".gauth"
@@ -50,11 +68,18 @@ class OtpTest(unittest.TestCase):
         self.assertFalse(otp.is_otp_secret_valid("not base32!"))
 
 
+class ItemTest(unittest.TestCase):
+    def test_leaves_out_empty_fields(self):
+        item = alfred.Item({"uid": 1}, "Title", None).xml()
+        self.assertEqual(item.get("uid"), "1")
+        self.assertEqual([e.tag for e in item], ["title"])
+
+
 class WorkflowTest(unittest.TestCase):
     def setUp(self):
         self.home = tempfile.TemporaryDirectory()
         self.addCleanup(self.home.cleanup)
-        self.env = dict(os.environ, HOME=self.home.name, XDG_CONFIG_HOME="", PYTHONDONTWRITEBYTECODE="1")
+        self.env = {"HOME": self.home.name, "XDG_CONFIG_HOME": ""}
 
     def path(self, *parts):
         return os.path.join(self.home.name, *parts)
@@ -66,11 +91,13 @@ class WorkflowTest(unittest.TestCase):
                 f.write("[{}]\nsecret={}\n\n".format(account, SECRET))
 
     def run_workflow(self, action, query=""):
-        result = subprocess.run(
-            [sys.executable, "workflow.py", action, query],
-            cwd=SRC, env=self.env, capture_output=True, text=True, check=True,
-        )
-        return result.stdout
+        # Alfred runs `python3 workflow.py <action> "{query}"` from the workflow's folder
+        output = io.TextIOWrapper(io.BytesIO(), encoding="utf-8")
+        with mock.patch.dict(os.environ, self.env), mock.patch.object(sys, "argv", ["workflow.py", action, query]), \
+                contextlib.redirect_stdout(output), chdir(SRC):
+            runpy.run_path("workflow.py", run_name="__main__")
+        output.flush()
+        return output.buffer.getvalue().decode("utf-8")
 
     def search(self, query=""):
         root = ElementTree.fromstring(self.run_workflow("search_by_account", query))
@@ -86,6 +113,38 @@ class WorkflowTest(unittest.TestCase):
         for item in items:
             self.assertRegex(item["arg"], r"^\d{6}$")
             self.assertEqual(item["subtitle"], item["arg"])
+
+    def test_shows_at_most_twenty_accounts(self):
+        self.write_config(".config", CONFIG_NAME, accounts=["Account {}".format(i) for i in range(25)])
+        self.assertEqual(len(self.search()), 20)
+
+    def test_key_and_hexkey_accounts(self):
+        os.makedirs(self.path(".config"))
+        with open(self.path(".config", CONFIG_NAME), "w") as f:
+            f.write("[Key]\nkey=12345678901234567890\n\n[Hex]\nhexkey={}\n".format(b"12345678901234567890".hex()))
+        with mock.patch("otp.time.time", return_value=59):
+            items = self.search()
+        self.assertEqual([(i["title"], i["arg"]) for i in items], [("Key", "287082"), ("Hex", "287082")])
+
+    def test_invalid_secret_does_not_hide_other_accounts(self):
+        os.makedirs(self.path(".config"))
+        with open(self.path(".config", CONFIG_NAME), "w") as f:
+            f.write("[Broken]\nsecret=not base32!\n\n[Google]\nsecret={}\n".format(SECRET))
+        broken, google = self.search()
+        self.assertEqual((broken["title"], broken["subtitle"], broken["icon"]), ("Broken", "Invalid secret", "error.png"))
+        self.assertEqual(google["title"], "Google")
+
+    def test_commands_are_not_searched(self):
+        self.write_config(".config", CONFIG_NAME, accounts=("add",))
+        self.assertEqual(self.search("add"), [])
+
+    def test_unescapes_alfred_queries(self):
+        self.write_config(".config", CONFIG_NAME, accounts=("My Bank",))
+        self.assertEqual([i["title"] for i in self.search("my\\ bank")], ["My Bank"])
+
+    def test_unknown_action(self):
+        with self.assertRaises(RuntimeError):
+            self.run_workflow("delete_everything")
 
     def test_filters_accounts_case_insensitively(self):
         self.write_config(".config", CONFIG_NAME, accounts=("Google", "GitHub", "Dropbox"))
@@ -111,6 +170,7 @@ class WorkflowTest(unittest.TestCase):
         [item] = self.search()
         self.assertIn("Invalid syntax", item["title"])
         self.assertEqual(item["icon"], "error.png")
+        self.assertIn("Invalid syntax", self.run_workflow("add_account", "Google, " + SECRET))
 
     def test_falls_back_to_legacy_config(self):
         self.write_config(LEGACY_CONFIG, accounts=("Legacy",))

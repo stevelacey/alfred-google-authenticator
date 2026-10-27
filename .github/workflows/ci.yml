@@ -1,0 +1,29 @@
+name: CI
+
+on:
+  pull_request: ~
+  push: ~
+
+jobs:
+  test:
+    name: Test
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        # 3.9 is the python3 that ships with macOS
+        python: ["3.9", "3.13"]
+    steps:
+      - uses: actions/checkout@v6
+
+      - uses: actions/setup-python@v6
+        with:
+          python-version: ${{ matrix.python }}
+
+      - run: pip install coverage
+      - run: coverage run --source=src -m unittest discover -s tests -v
+      - run: coverage report -m --fail-under=100
+      - run: coverage xml
+
+      - uses: codecov/codecov-action@v5
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}

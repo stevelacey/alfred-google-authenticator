@@ -3,6 +3,10 @@ Alfred Workflow: Google Authenticator
 
 An Alfred workflow for Google Authenticator that generates TOTP and copies them to the clipboard.
 
+[![CI](https://img.shields.io/github/actions/workflow/status/stevelacey/alfred-google-authenticator/ci.yml?branch=master&style=flat-square)](https://github.com/stevelacey/alfred-google-authenticator/actions/workflows/ci.yml?query=branch:master)
+[![Coverage](https://img.shields.io/codecov/c/github/stevelacey/alfred-google-authenticator?style=flat-square)](https://codecov.io/gh/stevelacey/alfred-google-authenticator)
+[![License: MIT](https://img.shields.io/badge/license-MIT-blue?style=flat-square)](LICENSE.txt)
+
 
 Installation
 ------------

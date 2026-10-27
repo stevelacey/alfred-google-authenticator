@@ -4,3 +4,6 @@
 .#*
 *.pyc
 .idea
+coverage.xml
+.coverage
+__pycache__/
