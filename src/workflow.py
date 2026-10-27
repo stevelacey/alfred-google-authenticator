@@ -116,7 +116,7 @@ class AlfredGAuth(alfred.AlfredWorkflow):
         if not i:
             yield self.warning_item('Account not found',
                                     'There is no account matching "{}" '
-                                    'on your configuration file '
+                                    'in your config file '
                                     '({})'.format(query,
                                                   self._config_file))
 
