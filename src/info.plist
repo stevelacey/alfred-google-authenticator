@@ -50,7 +50,7 @@
         <key>modifiers</key>
         <integer>1048576</integer>
         <key>modifiersubtext</key>
-        <string>Copy {query} to Clipboard</string>
+        <string>Paste {query}</string>
         <key>vitoclose</key>
         <false/>
       </dict>
@@ -208,7 +208,7 @@
         <key>removeextension</key>
         <false/>
         <key>text</key>
-        <string>Verification code ({query}) has been copied to the clipboard</string>
+        <string>Verification code ({query}) has been pasted</string>
         <key>title</key>
         <string>Google Authenticator</string>
       </dict>
@@ -296,7 +296,7 @@
       <key>config</key>
       <dict>
         <key>autopaste</key>
-        <false/>
+        <true/>
         <key>clipboardtext</key>
         <string>{query}</string>
         <key>ignoredynamicplaceholders</key>
